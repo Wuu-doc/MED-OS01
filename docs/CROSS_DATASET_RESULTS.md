@@ -1,92 +1,126 @@
-# Cross-Dataset Statistical Results
+# Cross-Dataset Results
 
-This document summarizes results reproduced from the three supplied
-140-configuration CSV files with
-`analysis/reproduce_cross_dataset_statistics.py`. Displayed values are rounded;
-the script reports and can save full-precision values.
+This document summarizes the revised manuscript-facing results. Numerical
+values are taken from the authoritative CSV files under `results/statistics/`,
+`results/calibration/`, and `results/robustness/`; displayed values are rounded.
+No model fitting or prediction regeneration is performed by the repository
+validation script.
 
-## 1. Spearman rank consistency across all 140 matched configurations
+## Highest observed mean F1-score on the predefined grid
 
-| Metric | PIMA–Heart Failure | PIMA–Thoracic Surgery | Heart Failure–Thoracic Surgery |
+| Dataset | Configuration | Threshold | Mean F1-score |
+|---|---|---:|---:|
+| PIMA | Random Forest + Baseline | 0.35 | 0.688999 |
+| Heart Failure | Random Forest + SMOTE, intensity 0.50 | 0.50 | 0.768403 |
+| Thoracic Surgery | Logistic Regression + ADASYN, intensity 0.50 | 0.35 | 0.337507 |
+
+These are the highest observed means within the predefined experimental grid.
+They are not externally validated deployment thresholds and do not establish
+causal superiority.
+
+Source: `results/statistics/key_results_summary.csv`.
+
+## Intensity × threshold interaction
+
+The authoritative mixed-effects analysis reports an omnibus likelihood-ratio
+test for `C(Intensity) × C(Threshold)`:
+
+| Statistic | df | p-value | Convergence |
+|---:|---:|---:|---|
+| 141.773720 | 16 | 3.237367 × 10⁻²² | Full and reduced models converged |
+
+The primary model converged, but the stored interpretation retains a residual
+diagnostic warning. Accordingly, the interaction supports joint evaluation of
+intensity and threshold but should not be overstated.
+
+Sources:
+`results/statistics/mixed_effects_interaction_omnibus.csv` and
+`results/statistics/mixed_effects_intensity_threshold_terms.csv`.
+
+## Matched SMOTE–ADASYN comparison
+
+The matched comparison uses intensities 0.50, 0.75, and 1.00 across the nine
+predefined thresholds:
+
+| Contrast | Mean ΔF1 | 95% cluster-bootstrap CI | Wilcoxon p-value |
 |---|---:|---:|---:|
-| F1-score | 0.6333 | 0.3182 | -0.2204 |
-| Recall | 0.8383 | 0.3559 | 0.0977 |
-| Balanced Accuracy | 0.6579 | 0.4550 | 0.0196 |
-| Precision | 0.6020 | 0.0450 | -0.0748 |
-| Accuracy | 0.3225 | 0.1786 | 0.5853 |
+| SMOTE − ADASYN | 0.000883 | [−0.001517, 0.003369] | 0.663032 |
 
-For F1-score, the corresponding p-values are <0.001 for PIMA–Heart Failure, <0.001 for PIMA–Thoracic Surgery, and 0.0089 for Heart Failure–Thoracic Surgery.
+The interval includes zero, and the paired test does not support a global
+superiority claim for either method.
 
-## 2. Top-K overlap for F1-score rankings
+Source: `results/statistics/smote_adasyn_global_matched_inference.csv`.
 
-| Pair | Top 5 | Top 10 | Top 20 | Top 30 |
-|---|---:|---:|---:|---:|
-| PIMA–Heart Failure | 0 | 0 | 6 | 12 |
-| PIMA–Thoracic Surgery | 1 | 4 | 9 | 13 |
-| Heart Failure–Thoracic Surgery | 0 | 0 | 0 | 1 |
+Dataset-level supporting estimates are available in
+`results/statistics/smote_adasyn_dataset_supporting_summaries.csv`.
 
-The overlap is the intersection count among two deterministic Top-K rankings.
-Configurations are matched by model, sampling method, oversampling intensity,
-and decision threshold; exact metric ties are broken by that key. The analysis
-output also reports overlap/K and the Jaccard index.
+## Cross-dataset configuration consistency
 
-## 3. Mean F1-score by oversampling intensity
+Spearman correlations over matched common-grid configuration rankings are:
 
-| Intensity | PIMA | Heart Failure | Thoracic Surgery |
-|---:|---:|---:|---:|
-| Baseline | 0.5930 | 0.6930 | 0.0581 |
-| 0.50 | 0.6169 | 0.7139 | 0.1322 |
-| 0.75 | 0.6234 | 0.7048 | 0.1534 |
-| 1.00 | 0.6300 | 0.7035 | 0.1649 |
-
-Baseline is included only in the descriptive means above. Friedman tests compare
-intensities 0.50, 0.75, and 1.00 using 40 matched classifier + sampling method +
-threshold blocks per dataset:
-
-| Dataset | Friedman chi-square | p-value | Kendall's W |
+| Dataset pair | Spearman ρ | Descriptive p-value | Top-10 intersection |
 |---|---:|---:|---:|
-| PIMA | 19.3500 | <0.001 | 0.2419 |
-| Heart Failure | 9.6000 | 0.0082 | 0.1200 |
-| Thoracic Surgery | 14.3822 | <0.001 | 0.1798 |
+| Heart Failure–PIMA | 0.618862 | 6.200921 × 10⁻³⁰ | 0 |
+| Heart Failure–Thoracic Surgery | −0.009697 | 0.873984 | 0 |
+| PIMA–Thoracic Surgery | 0.663224 | 1.364227 × 10⁻³⁵ | 0 |
 
-## 4. Mean F1-score by decision threshold
+The differing correlations and absent Top-10 intersections indicate limited
+configuration-level transferability despite consistency in some broader
+factor-wise patterns. They do not support broad claims beyond these datasets.
 
-| Threshold | PIMA | Heart Failure | Thoracic Surgery |
-|---:|---:|---:|---:|
-| 0.50 | 0.6427 | 0.7164 | 0.1682 |
-| 0.55 | 0.6294 | 0.7100 | 0.1472 |
-| 0.60 | 0.6139 | 0.7032 | 0.1235 |
-| 0.65 | 0.5904 | 0.6917 | 0.1093 |
+Source: `results/statistics/transferability_rank_consistency.csv`. Factor-wise
+summaries for classifier, sampling method, intensity, and threshold are stored
+in the corresponding `transferability_common_grid_factor_*.csv` files.
 
-Friedman tests across the four thresholds use 35 matched base configurations per
-dataset:
+## Low-intensity sensitivity analysis
 
-| Dataset | Friedman chi-square | p-value | Kendall's W |
-|---|---:|---:|---:|
-| PIMA | 92.4514 | <0.001 | 0.8805 |
-| Heart Failure | 36.9238 | <0.001 | 0.3517 |
-| Thoracic Surgery | 52.0351 | <0.001 | 0.4956 |
+Across datasets, the descriptive mean contrast for SMOTE intensity 0.25 minus
+SMOTE intensity 0.50 is −0.012725, with cluster-bootstrap 95% CI
+[−0.017981, −0.007760]. This is a sensitivity analysis and is not substituted
+for the common SMOTE–ADASYN grid.
 
-All six pairwise threshold comparisons remain significant after Holm correction in all three datasets.
+Source:
+`results/statistics/smote_alpha025_low_intensity_sensitivity_summary.csv`.
 
-## 5. Threshold-independent metrics: 35 unique base configurations
+ADASYN 0.25 is not part of the main grid. Its preliminary screening failed to
+produce the requested samples in 92 of 150 training splits; the screening rows
+are retained in `results/supplementary/adasyn_low_intensity_feasibility.csv`.
 
-| Metric | PIMA–Heart Failure | PIMA–Thoracic Surgery | Heart Failure–Thoracic Surgery |
-|---|---:|---:|---:|
-| ROC-AUC | 0.2401 | 0.7779 | 0.2319 |
-| PR-AUC | 0.1056 | 0.6936 | 0.2056 |
-| Brier score | 0.5852 | 0.5619 | 0.8852 |
+## Ranking and calibration metrics
+
+ROC-AUC and Average Precision are threshold-independent ranking metrics. Brier
+score is the manuscript-facing calibration metric. These values are computed
+from held-out predicted probabilities and do not depend on the predefined
+decision threshold. The authoritative 120-row summary is provided at
+`results/calibration/main_ap_brier_summary.csv`.
+
+## Robustness analyses
+
+The authoritative key-results summary reports the following descriptive
+robustness estimates:
+
+| Analysis | Scope | Mean ΔF1 |
+|---|---|---:|
+| SMOTENC − SMOTE | Heart Failure | 0.002740 |
+| SMOTENC − SMOTE | Thoracic Surgery | 0.003647 |
+| Tuned − fixed hyperparameters | All datasets | −0.000214 |
+
+Full outputs are retained in:
+
+- `results/robustness/smotenc_vs_smote_summary.csv`
+- `results/robustness/fixed_vs_tuned_robustness_summary.csv`
+
+These results are descriptive robustness checks and remain separate from the
+primary configuration ranking.
 
 ## Interpretation
 
-In these summaries, mean F1-score decreases as the threshold increases from 0.50
-to 0.65 in all three datasets. The descriptive optimum among the tested
-oversampling intensities differs by dataset. Rank correlations also differ by
-dataset pair, while Top-K intersections are generally limited, so the results do
-not establish a universally transferable optimal configuration.
+The revised results support joint consideration of oversampling intensity and
+predefined decision threshold. The matched SMOTE–ADASYN estimate is near zero,
+while configuration rankings vary across dataset pairs. The evidence therefore
+supports dataset-specific configuration and cautious cross-dataset validation,
+rather than a universally superior sampling method or setting.
 
-The four threshold variants of a base configuration reuse the same probability
-predictions and are therefore statistically dependent. The Friedman and
-Wilcoxon p-values should be treated as descriptive evidence for this structured
-comparison, not as evidence from independent model fits. These datasets support
-cross-dataset validation and are not external clinical validation cohorts.
+The 50 held-out evaluations per model–sampling configuration arise from five
+repetitions of stratified 10-fold cross-validation and are not independent
+evaluations.
