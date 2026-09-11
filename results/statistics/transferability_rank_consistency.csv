@@ -1,0 +1,4 @@
+DatasetA,DatasetB,SpearmanRho,DescriptivePValue,TopK,TopKIntersection,TopKJaccard,InferenceNote
+Heart Failure,PIMA,0.6188620176164585,6.200921346206862e-30,10,0,0.0,Descriptive consistency; no forced significance claim
+Heart Failure,Thoracic Surgery,-0.009696832982647742,0.8739842539349385,10,0,0.0,Descriptive consistency; no forced significance claim
+PIMA,Thoracic Surgery,0.6632240521698247,1.3642274599910866e-35,10,0,0.0,Descriptive consistency; no forced significance claim

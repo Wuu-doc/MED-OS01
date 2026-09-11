@@ -1,5 +1,4 @@
-# Verified analysis environment: Python 3.13.13
+# Verified validation/figure environment: Python 3.13.13
 numpy==2.5.2
 pandas==3.0.5
-scipy==1.18.0
-statsmodels==0.14.6
+matplotlib==3.11.1

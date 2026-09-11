@@ -1,0 +1,10 @@
+ResultGroup,Dataset,ContrastOrConfiguration,Estimate,Lower95CI,Upper95CI,PValue,Interpretation
+HighestObservedMeanF1,PIMA,Random Forest + Baseline; threshold=0.35,0.688999,,,,Highest observed mean only
+HighestObservedMeanF1,Heart Failure,Random Forest + SMOTE alpha=0.50; threshold=0.50,0.768403,,,,Highest observed mean only
+HighestObservedMeanF1,Thoracic Surgery,Logistic Regression + ADASYN alpha=0.50; threshold=0.35,0.337507,,,,Highest observed mean only
+MixedEffectsInteraction,All,C(Intensity) x C(Threshold) omnibus LRT chi-square(16),141.773720,,,3.237367e-22,Primary LMM converged; interpret with residual diagnostic warning
+MatchedSMOTEvsADASYN,All,Mean DeltaF1 SMOTE minus ADASYN,0.000883,-0.001517,0.003369,0.663032,No statistical support for global superiority
+LowIntensitySensitivity,All,Mean DeltaF1 SMOTE alpha=0.25 minus alpha=0.50,-0.012725,-0.017981,-0.007760,,Sensitivity analysis only
+SMOTENCRobustness,Heart Failure,Mean DeltaF1 SMOTENC minus SMOTE,0.002740,,,,Descriptive robustness result
+SMOTENCRobustness,Thoracic Surgery,Mean DeltaF1 SMOTENC minus SMOTE,0.003647,,,,Descriptive robustness result
+HyperparameterRobustness,All,Mean DeltaF1 tuned minus fixed,-0.000214,,,,Descriptive robustness result; kept separate from primary ranking

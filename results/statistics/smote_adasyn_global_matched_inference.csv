@@ -1,0 +1,2 @@
+Comparison,MatchedThresholdRows,FitPairClusters,IndependentBootstrapClusters,MeanDifference,MedianDifference,ClusterBootstrap95CI_Lower,ClusterBootstrap95CI_Upper,PairedTest,PairedStatistic,PairedPValue,EffectSize_CohenDz,EffectSize_RankBiserial,InferenceGrid
+SMOTE minus ADASYN,20250,2250,150,0.0008832372314706904,0.0,-0.0015173541676528185,0.0033688654280925076,Wilcoxon signed-rank on fit-pair mean deltas,1181251.0,0.6630320710411806,0.01833092112109386,0.010762476420575286,"alpha={0.50,0.75,1.00}; thresholds=0.30-0.70"

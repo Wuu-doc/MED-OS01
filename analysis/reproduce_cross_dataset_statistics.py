@@ -1,68 +1,56 @@
 #!/usr/bin/env python3
-"""Validate the summary files and reproduce the MED-OS01 statistics.
+"""Validate the revised MED-OS01 grid and index authoritative statistics.
 
-The default analysis uses F1-score. Additional threshold-dependent metrics can
-be selected from the command line. Baseline configurations are summarized for
-context but are never included in the oversampling-intensity Friedman test.
+This script does not fit classifiers, regenerate predictions, or refit the
+mixed-effects model. It validates each 360-row dataset summary and the combined
+1,080-row table, then reports the manuscript-facing statistics already stored
+in ``results/statistics``. Baseline ``RequestedIntensity`` remains missing and
+is never converted to zero.
 """
 
 from __future__ import annotations
 
 import argparse
-from itertools import combinations
 from pathlib import Path
-from typing import Iterable
 
 import numpy as np
 import pandas as pd
-from scipy.stats import friedmanchisquare, spearmanr, wilcoxon
-from statsmodels.stats.multitest import multipletests
 
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_FILES = {
-    "PIMA": ROOT / "results" / "pima" / "summary_140_configurations.csv",
-    "Heart Failure": ROOT
-    / "results"
-    / "heart_failure"
-    / "summary_140_configurations.csv",
-    "Thoracic Surgery": ROOT
-    / "results"
-    / "thoracic_surgery"
-    / "summary_140_configurations.csv",
+    "PIMA": ROOT / "results" / "pima" / "summary_360_configurations.csv",
+    "Heart Failure": ROOT / "results" / "heart_failure" / "summary_360_configurations.csv",
+    "Thoracic Surgery": ROOT / "results" / "thoracic_surgery" / "summary_360_configurations.csv",
 }
+COMBINED_FILE = ROOT / "results" / "combined_summary_1080_configurations.csv"
+MANIFEST_FILE = ROOT / "CSV_MANIFEST.csv"
+KEY_RESULTS_FILE = ROOT / "results" / "statistics" / "key_results_summary.csv"
 
-KEY = ["Model", "SamplingMethod", "OversamplingIntensity", "Threshold"]
-BASE_KEY = ["Model", "SamplingMethod", "OversamplingIntensity"]
-MODELS = [
-    "Logistic Regression",
-    "Random Forest",
-    "MLP",
-    "XGBoost",
-    "LightGBM",
+MODELS = {
+    "Logistic Regression", "Random Forest", "MLP", "XGBoost", "LightGBM"
+}
+SAMPLING_METHODS = {"Baseline", "SMOTE", "ADASYN"}
+SMOTE_INTENSITIES = {0.25, 0.50, 0.75, 1.00}
+ADASYN_INTENSITIES = {0.50, 0.75, 1.00}
+THRESHOLDS = {0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70}
+KEY = ["Model", "SamplingMethod", "RequestedIntensity", "Threshold"]
+
+THRESHOLD_DEPENDENT_METRICS = [
+    "F1_Mean", "Precision_Mean", "Sensitivity_Mean", "Specificity_Mean",
+    "BalancedAccuracy_Mean",
 ]
-INTENSITIES = [0.50, 0.75, 1.00]
-THRESHOLDS = [0.50, 0.55, 0.60, 0.65]
-TOP_K_VALUES = [5, 10, 20, 30]
-
-METRICS = {
-    "f1": ("F1-score", "F1Score_Mean"),
-    "recall": ("Recall", "Recall_Mean"),
-    "precision": ("Precision", "Precision_Mean"),
-    "balanced_accuracy": ("Balanced Accuracy", "BalancedAccuracy_Mean"),
-    "accuracy": ("Accuracy", "Accuracy_Mean"),
-}
-THRESHOLD_INDEPENDENT_METRICS = {
-    "ROC-AUC": "ROC_AUC_Mean",
-    "PR-AUC": "PR_AUC_Mean",
-    "Brier score": "BrierScore_Mean",
-}
+PROBABILITY_METRICS = [
+    "ROC_AUC_Mean", "AveragePrecision_Mean", "BrierScore_Mean"
+]
+REQUIRED_COLUMNS = [
+    "Dataset", *KEY, *THRESHOLD_DEPENDENT_METRICS, *PROBABILITY_METRICS,
+    "FoldRepeatN",
+]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Reproduce the validated MED-OS01 cross-dataset statistics."
-    )
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pima", type=Path, default=DEFAULT_FILES["PIMA"])
     parser.add_argument(
         "--heart-failure", type=Path, default=DEFAULT_FILES["Heart Failure"]
@@ -70,429 +58,220 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--thoracic-surgery", type=Path, default=DEFAULT_FILES["Thoracic Surgery"]
     )
-    metric_group = parser.add_mutually_exclusive_group()
-    metric_group.add_argument(
-        "--metrics",
-        nargs="+",
-        choices=tuple(METRICS),
-        default=["f1"],
-        help="Threshold-dependent metrics to analyze (default: f1).",
-    )
-    metric_group.add_argument(
-        "--all-metrics",
-        action="store_true",
-        help="Analyze all five supported threshold-dependent metrics.",
-    )
+    parser.add_argument("--combined", type=Path, default=COMBINED_FILE)
+    parser.add_argument("--manifest", type=Path, default=MANIFEST_FILE)
     parser.add_argument(
-        "--include-threshold-independent",
-        action="store_true",
-        help="Also correlate ROC-AUC, PR-AUC, and Brier score over 35 base configurations.",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        help="Optional directory in which to save each result table as CSV.",
+        "--output-dir", type=Path,
+        help="Optionally save validation and descriptive summaries as CSV.",
     )
     return parser.parse_args()
 
 
-def expected_configurations() -> set[tuple[str, str, float, float]]:
-    expected: set[tuple[str, str, float, float]] = set()
+def _rounded_values(series: pd.Series) -> set[float]:
+    values = pd.to_numeric(series, errors="coerce").dropna().round(10)
+    return set(values.astype(float))
+
+
+def _display_values(values: set[float]) -> str:
+    return "|".join(f"{value:.2f}" for value in sorted(values))
+
+
+def expected_grid() -> set[tuple[str, str, float | None, float]]:
+    expected: set[tuple[str, str, float | None, float]] = set()
     for model in MODELS:
         for threshold in THRESHOLDS:
-            expected.add((model, "Baseline", 0.0, threshold))
-        for method in ("SMOTE", "ADASYN"):
-            for intensity in INTENSITIES:
-                for threshold in THRESHOLDS:
-                    expected.add((model, method, intensity, threshold))
+            expected.add((model, "Baseline", None, threshold))
+        for intensity in SMOTE_INTENSITIES:
+            for threshold in THRESHOLDS:
+                expected.add((model, "SMOTE", intensity, threshold))
+        for intensity in ADASYN_INTENSITIES:
+            for threshold in THRESHOLDS:
+                expected.add((model, "ADASYN", intensity, threshold))
     return expected
 
 
-def _short_config_list(configs: Iterable[tuple], limit: int = 3) -> str:
-    values = sorted(configs, key=str)
-    preview = "; ".join(map(str, values[:limit]))
-    return preview + (f"; ... ({len(values)} total)" if len(values) > limit else "")
+def observed_grid(frame: pd.DataFrame) -> set[tuple[str, str, float | None, float]]:
+    rows: set[tuple[str, str, float | None, float]] = set()
+    for model, method, intensity, threshold in frame[KEY].itertuples(
+        index=False, name=None
+    ):
+        canonical_intensity = None if pd.isna(intensity) else round(float(intensity), 10)
+        rows.add(
+            (str(model), str(method), canonical_intensity, round(float(threshold), 10))
+        )
+    return rows
 
 
-def load_and_validate(
-    files: dict[str, Path], metric_columns: list[str], include_independent: bool
-) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
-    datasets: dict[str, pd.DataFrame] = {}
-    validation_rows = []
-    expected = expected_configurations()
+def load_and_validate_dataset(dataset: str, path: Path) -> tuple[pd.DataFrame, dict]:
+    if not path.is_file():
+        raise FileNotFoundError(f"Missing {dataset} summary: {path}")
+    frame = pd.read_csv(path, encoding="utf-8-sig")
+    missing = sorted(set(REQUIRED_COLUMNS).difference(frame.columns))
+    if missing:
+        raise ValueError(f"{dataset} is missing required columns: {missing}")
+    if len(frame) != 360:
+        raise ValueError(f"{dataset} must contain 360 rows; found {len(frame)}")
 
-    for dataset, path in files.items():
-        if not path.is_file():
-            raise FileNotFoundError(f"Missing input for {dataset}: {path}")
+    frame = frame.copy()
+    frame["Model"] = frame["Model"].astype(str).str.strip()
+    frame["SamplingMethod"] = frame["SamplingMethod"].astype(str).str.strip()
+    frame["RequestedIntensity"] = pd.to_numeric(
+        frame["RequestedIntensity"], errors="coerce"
+    )
+    frame["Threshold"] = pd.to_numeric(frame["Threshold"], errors="coerce").round(10)
+    frame["FoldRepeatN"] = pd.to_numeric(frame["FoldRepeatN"], errors="coerce")
 
-        df = pd.read_csv(path, encoding="utf-8-sig")
-        if "ExpansionRatio" in df.columns and "OversamplingIntensity" not in df.columns:
-            df = df.rename(columns={"ExpansionRatio": "OversamplingIntensity"})
+    if set(frame["Model"]) != MODELS:
+        raise ValueError(f"{dataset} model set is invalid: {sorted(set(frame['Model']))}")
+    if set(frame["SamplingMethod"]) != SAMPLING_METHODS:
+        raise ValueError(f"{dataset} sampling-method set is invalid")
+    if _rounded_values(frame["Threshold"]) != THRESHOLDS:
+        raise ValueError(f"{dataset} threshold grid is invalid")
 
-        required = set(KEY + metric_columns)
-        if include_independent:
-            required.update(THRESHOLD_INDEPENDENT_METRICS.values())
-        missing_columns = sorted(required.difference(df.columns))
-        if missing_columns:
+    baseline = frame["SamplingMethod"].eq("Baseline")
+    if not frame.loc[baseline, "RequestedIntensity"].isna().all():
+        raise ValueError(f"{dataset} Baseline intensity must be blank/NA, never zero")
+    if frame.loc[~baseline, "RequestedIntensity"].isna().any():
+        raise ValueError(f"{dataset} has missing non-Baseline intensity values")
+    smote = frame["SamplingMethod"].eq("SMOTE")
+    adasyn = frame["SamplingMethod"].eq("ADASYN")
+    if _rounded_values(frame.loc[smote, "RequestedIntensity"]) != SMOTE_INTENSITIES:
+        raise ValueError(f"{dataset} SMOTE intensity grid is invalid")
+    if _rounded_values(frame.loc[adasyn, "RequestedIntensity"]) != ADASYN_INTENSITIES:
+        raise ValueError(f"{dataset} ADASYN intensity grid is invalid")
+    if not frame["FoldRepeatN"].eq(50).all():
+        raise ValueError(f"{dataset} FoldRepeatN must equal 50 in every row")
+    if frame.duplicated(KEY).any():
+        raise ValueError(f"{dataset} contains duplicate configuration rows")
+
+    actual_grid = observed_grid(frame)
+    wanted_grid = expected_grid()
+    if actual_grid != wanted_grid:
+        raise ValueError(
+            f"{dataset} grid differs from the expected 360 rows "
+            f"(missing={len(wanted_grid - actual_grid)}, "
+            f"unexpected={len(actual_grid - wanted_grid)})"
+        )
+
+    metric_columns = THRESHOLD_DEPENDENT_METRICS + PROBABILITY_METRICS
+    numeric_metrics = frame[metric_columns].apply(pd.to_numeric, errors="coerce")
+    if not np.isfinite(numeric_metrics.to_numpy(dtype=float)).all():
+        raise ValueError(f"{dataset} contains missing/non-finite metric values")
+
+    # These values come directly from predicted probabilities and must be
+    # constant over the nine predefined threshold rows for each configuration.
+    variation = frame.groupby(
+        ["Model", "SamplingMethod", "RequestedIntensity"], dropna=False
+    )[PROBABILITY_METRICS].nunique(dropna=False)
+    if (variation != 1).any().any():
+        raise ValueError(f"{dataset} has ROC-AUC/AP/Brier values varying by threshold")
+
+    dataset_values = set(frame["Dataset"].astype(str).str.strip())
+    if dataset_values != {dataset}:
+        raise ValueError(f"{dataset} file contains Dataset values {sorted(dataset_values)}")
+
+    audit = {
+        "Dataset": dataset,
+        "Rows": len(frame),
+        "Thresholds": _display_values(_rounded_values(frame["Threshold"])),
+        "ModelCount": frame["Model"].nunique(),
+        "SamplingMethods": "|".join(sorted(set(frame["SamplingMethod"]))),
+        "BaselineIntensity": "blank/NA",
+        "SMOTEIntensities": _display_values(SMOTE_INTENSITIES),
+        "ADASYNIntensities": _display_values(ADASYN_INTENSITIES),
+        "FoldRepeatN": int(frame["FoldRepeatN"].iloc[0]),
+        "Status": "PASS",
+    }
+    return frame, audit
+
+
+def validate_combined(combined_path: Path, datasets: dict[str, pd.DataFrame]) -> None:
+    if not combined_path.is_file():
+        raise FileNotFoundError(f"Missing combined summary: {combined_path}")
+    combined = pd.read_csv(combined_path, encoding="utf-8-sig")
+    if len(combined) != 1080:
+        raise ValueError(f"Combined summary must have 1,080 rows; found {len(combined)}")
+    expected = pd.concat(datasets.values(), ignore_index=True)
+    if list(combined.columns) != list(expected.columns):
+        raise ValueError("Combined summary columns differ from the dataset summaries")
+    pd.testing.assert_frame_equal(
+        combined.reset_index(drop=True), expected.reset_index(drop=True),
+        check_dtype=False, check_exact=True,
+    )
+
+
+def validate_manifest(path: Path) -> pd.DataFrame:
+    if not path.is_file():
+        raise FileNotFoundError(f"Missing CSV manifest: {path}")
+    manifest = pd.read_csv(path, encoding="utf-8-sig")
+    required = {"RepoPath", "DataRows", "Columns"}
+    missing = sorted(required.difference(manifest.columns))
+    if missing:
+        raise ValueError(f"CSV manifest is missing columns: {missing}")
+    for row in manifest.itertuples(index=False):
+        csv_path = ROOT / row.RepoPath
+        if not csv_path.is_file():
+            raise FileNotFoundError(f"Manifest-listed CSV is missing: {csv_path}")
+        frame = pd.read_csv(csv_path, encoding="utf-8-sig")
+        if len(frame) != int(row.DataRows) or len(frame.columns) != int(row.Columns):
             raise ValueError(
-                f"{dataset} is missing required columns: {', '.join(missing_columns)}"
+                f"Manifest mismatch for {row.RepoPath}: "
+                f"{len(frame)} rows/{len(frame.columns)} columns; expected "
+                f"{int(row.DataRows)}/{int(row.Columns)}"
             )
-
-        df = df.copy()
-        df["Model"] = df["Model"].astype(str).str.strip()
-        df["SamplingMethod"] = df["SamplingMethod"].astype(str).str.strip()
-        df["OversamplingIntensity"] = pd.to_numeric(
-            df["OversamplingIntensity"], errors="coerce"
-        )
-        df.loc[
-            df["SamplingMethod"].eq("Baseline")
-            & df["OversamplingIntensity"].isna(),
-            "OversamplingIntensity",
-        ] = 0.0
-        df["OversamplingIntensity"] = df["OversamplingIntensity"].round(10)
-        df["Threshold"] = pd.to_numeric(df["Threshold"], errors="coerce").round(10)
-
-        numeric_columns = metric_columns.copy()
-        if include_independent:
-            numeric_columns.extend(THRESHOLD_INDEPENDENT_METRICS.values())
-        for column in numeric_columns:
-            df[column] = pd.to_numeric(df[column], errors="coerce")
-
-        if len(df) != 140:
-            raise ValueError(f"{dataset} must contain 140 rows; found {len(df)}")
-        if df[KEY].isna().any().any():
-            null_counts = df[KEY].isna().sum()
-            raise ValueError(f"{dataset} has missing configuration keys:\n{null_counts}")
-        if df.duplicated(KEY).any():
-            duplicates = df.loc[df.duplicated(KEY, keep=False), KEY]
-            raise ValueError(f"{dataset} has duplicate configurations:\n{duplicates}")
-        if not np.isfinite(df[numeric_columns].to_numpy(dtype=float)).all():
-            raise ValueError(f"{dataset} has missing or non-finite requested metric values")
-
-        observed = set(df[KEY].itertuples(index=False, name=None))
-        missing_configs = expected.difference(observed)
-        unexpected_configs = observed.difference(expected)
-        if missing_configs or unexpected_configs:
-            details = []
-            if missing_configs:
-                details.append(f"missing: {_short_config_list(missing_configs)}")
-            if unexpected_configs:
-                details.append(f"unexpected: {_short_config_list(unexpected_configs)}")
-            raise ValueError(f"{dataset} configuration grid is invalid ({' | '.join(details)})")
-
-        if include_independent:
-            variation = df.groupby(BASE_KEY, dropna=False)[
-                list(THRESHOLD_INDEPENDENT_METRICS.values())
-            ].nunique(dropna=False)
-            if (variation > 1).any().any():
-                raise ValueError(
-                    f"{dataset} has threshold-independent metrics that vary by threshold"
-                )
-
-        # Canonical ordering makes all summaries and tie handling independent of
-        # the row order in which a source CSV happens to be supplied.
-        df = df.sort_values(KEY, kind="mergesort").reset_index(drop=True)
-        datasets[dataset] = df
-        validation_rows.append(
-            {
-                "Dataset": dataset,
-                "File": str(path.resolve()),
-                "Rows": len(df),
-                "UniqueConfigurations": len(observed),
-                "UniqueBaseConfigurations": len(df[BASE_KEY].drop_duplicates()),
-                "Status": "valid",
-            }
-        )
-
-    return datasets, pd.DataFrame(validation_rows)
+    return manifest
 
 
-def marginal_summaries(
-    datasets: dict[str, pd.DataFrame], metrics: dict[str, tuple[str, str]]
-) -> pd.DataFrame:
+def descriptive_summary(datasets: dict[str, pd.DataFrame]) -> pd.DataFrame:
     rows = []
-    for dataset, df in datasets.items():
-        baseline = df[df["SamplingMethod"].eq("Baseline")]
-        sampled = df[df["SamplingMethod"].isin(["SMOTE", "ADASYN"])]
-        for _, (metric_label, column) in metrics.items():
+    for dataset, frame in datasets.items():
+        for metric in THRESHOLD_DEPENDENT_METRICS + PROBABILITY_METRICS:
             rows.append(
                 {
                     "Dataset": dataset,
-                    "Factor": "OversamplingIntensity",
-                    "Level": "Baseline",
-                    "Metric": metric_label,
-                    "Mean": baseline[column].mean(),
-                    "NConfigurations": len(baseline),
-                }
-            )
-            for intensity in INTENSITIES:
-                values = sampled.loc[
-                    sampled["OversamplingIntensity"].eq(intensity), column
-                ]
-                rows.append(
-                    {
-                        "Dataset": dataset,
-                        "Factor": "OversamplingIntensity",
-                        "Level": f"{intensity:.2f}",
-                        "Metric": metric_label,
-                        "Mean": values.mean(),
-                        "NConfigurations": len(values),
-                    }
-                )
-            for threshold in THRESHOLDS:
-                values = df.loc[df["Threshold"].eq(threshold), column]
-                rows.append(
-                    {
-                        "Dataset": dataset,
-                        "Factor": "Threshold",
-                        "Level": f"{threshold:.2f}",
-                        "Metric": metric_label,
-                        "Mean": values.mean(),
-                        "NConfigurations": len(values),
-                    }
-                )
-    return pd.DataFrame(rows)
-
-
-def matched_spearman(
-    datasets: dict[str, pd.DataFrame], metrics: dict[str, tuple[str, str]]
-) -> pd.DataFrame:
-    rows = []
-    for dataset_a, dataset_b in combinations(datasets, 2):
-        columns = [column for _, column in metrics.values()]
-        merged = datasets[dataset_a][KEY + columns].merge(
-            datasets[dataset_b][KEY + columns],
-            on=KEY,
-            suffixes=("_a", "_b"),
-            validate="one_to_one",
-        )
-        if len(merged) != 140:
-            raise ValueError(
-                f"Expected 140 matches for {dataset_a} vs {dataset_b}; got {len(merged)}"
-            )
-        for _, (metric_label, column) in metrics.items():
-            result = spearmanr(merged[f"{column}_a"], merged[f"{column}_b"])
-            rows.append(
-                {
-                    "Dataset1": dataset_a,
-                    "Dataset2": dataset_b,
-                    "Metric": metric_label,
-                    "NMatched": len(merged),
-                    "SpearmanRho": result.statistic,
-                    "PValue": result.pvalue,
+                    "Metric": metric,
+                    "MeanAcrossConfigurationRows": pd.to_numeric(frame[metric]).mean(),
+                    "ConfigurationRows": len(frame),
+                    "Interpretation": "descriptive only",
                 }
             )
     return pd.DataFrame(rows)
-
-
-def topk_overlap(
-    datasets: dict[str, pd.DataFrame], metrics: dict[str, tuple[str, str]]
-) -> pd.DataFrame:
-    rows = []
-    for dataset_a, dataset_b in combinations(datasets, 2):
-        for _, (metric_label, column) in metrics.items():
-            ranked = {}
-            for dataset in (dataset_a, dataset_b):
-                ranked[dataset] = datasets[dataset].sort_values(
-                    [column, *KEY],
-                    ascending=[False, True, True, True, True],
-                    kind="mergesort",
-                )
-            for k in TOP_K_VALUES:
-                top_a = set(
-                    ranked[dataset_a].head(k)[KEY].itertuples(index=False, name=None)
-                )
-                top_b = set(
-                    ranked[dataset_b].head(k)[KEY].itertuples(index=False, name=None)
-                )
-                overlap = len(top_a.intersection(top_b))
-                union = len(top_a.union(top_b))
-                rows.append(
-                    {
-                        "Dataset1": dataset_a,
-                        "Dataset2": dataset_b,
-                        "Metric": metric_label,
-                        "TopK": k,
-                        "Overlap": overlap,
-                        "OverlapProportion": overlap / k,
-                        "Jaccard": overlap / union,
-                    }
-                )
-    return pd.DataFrame(rows)
-
-
-def _friedman_table(
-    df: pd.DataFrame, factor: str, metric_column: str
-) -> pd.DataFrame:
-    if factor == "Threshold":
-        return df.pivot(index=BASE_KEY, columns="Threshold", values=metric_column)[
-            THRESHOLDS
-        ]
-    sampled = df[df["SamplingMethod"].isin(["SMOTE", "ADASYN"])]
-    return sampled.pivot(
-        index=["Model", "SamplingMethod", "Threshold"],
-        columns="OversamplingIntensity",
-        values=metric_column,
-    )[INTENSITIES]
-
-
-def _wilcoxon(values_a: pd.Series, values_b: pd.Series) -> tuple[float, float]:
-    differences = values_a.to_numpy() - values_b.to_numpy()
-    if np.allclose(differences, 0.0):
-        return 0.0, 1.0
-    result = wilcoxon(values_a, values_b, alternative="two-sided")
-    return float(result.statistic), float(result.pvalue)
-
-
-def friedman_and_posthoc(
-    datasets: dict[str, pd.DataFrame], metrics: dict[str, tuple[str, str]]
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    friedman_rows = []
-    posthoc_rows = []
-
-    for dataset, df in datasets.items():
-        for _, (metric_label, column) in metrics.items():
-            for factor in ("Threshold", "OversamplingIntensity"):
-                table = _friedman_table(df, factor, column)
-                if table.isna().any().any():
-                    raise ValueError(f"Incomplete {factor} blocks for {dataset}/{metric_label}")
-                result = friedmanchisquare(*(table[level] for level in table.columns))
-                n_blocks = len(table)
-                n_levels = len(table.columns)
-                kendalls_w = result.statistic / (n_blocks * (n_levels - 1))
-                friedman_rows.append(
-                    {
-                        "Dataset": dataset,
-                        "Factor": factor,
-                        "Metric": metric_label,
-                        "NBlocks": n_blocks,
-                        "NLevels": n_levels,
-                        "FriedmanChi2": result.statistic,
-                        "PValue": result.pvalue,
-                        "KendallsW": kendalls_w,
-                    }
-                )
-
-                pair_rows = []
-                raw_p_values = []
-                for level_a, level_b in combinations(table.columns, 2):
-                    statistic, raw_p = _wilcoxon(table[level_a], table[level_b])
-                    pair_rows.append(
-                        {
-                            "Dataset": dataset,
-                            "Factor": factor,
-                            "Metric": metric_label,
-                            "Level1": level_a,
-                            "Level2": level_b,
-                            "NBlocks": n_blocks,
-                            "WilcoxonStatistic": statistic,
-                            "MedianDifference": np.median(
-                                table[level_a].to_numpy() - table[level_b].to_numpy()
-                            ),
-                            "RawP": raw_p,
-                        }
-                    )
-                    raw_p_values.append(raw_p)
-                rejected, adjusted, _, _ = multipletests(
-                    raw_p_values, alpha=0.05, method="holm"
-                )
-                for row, reject, adjusted_p in zip(pair_rows, rejected, adjusted):
-                    row["HolmAdjustedP"] = adjusted_p
-                    row["RejectAt0.05"] = bool(reject)
-                    posthoc_rows.append(row)
-
-    return pd.DataFrame(friedman_rows), pd.DataFrame(posthoc_rows)
-
-
-def threshold_independent_spearman(
-    datasets: dict[str, pd.DataFrame]
-) -> pd.DataFrame:
-    columns = list(THRESHOLD_INDEPENDENT_METRICS.values())
-    base = {
-        dataset: df.sort_values([*BASE_KEY, "Threshold"])
-        .drop_duplicates(BASE_KEY)[BASE_KEY + columns]
-        for dataset, df in datasets.items()
-    }
-    rows = []
-    for dataset_a, dataset_b in combinations(base, 2):
-        merged = base[dataset_a].merge(
-            base[dataset_b],
-            on=BASE_KEY,
-            suffixes=("_a", "_b"),
-            validate="one_to_one",
-        )
-        if len(merged) != 35:
-            raise ValueError(
-                f"Expected 35 base matches for {dataset_a} vs {dataset_b}; got {len(merged)}"
-            )
-        for metric_label, column in THRESHOLD_INDEPENDENT_METRICS.items():
-            result = spearmanr(merged[f"{column}_a"], merged[f"{column}_b"])
-            rows.append(
-                {
-                    "Dataset1": dataset_a,
-                    "Dataset2": dataset_b,
-                    "Metric": metric_label,
-                    "NMatched": len(merged),
-                    "SpearmanRho": result.statistic,
-                    "PValue": result.pvalue,
-                }
-            )
-    return pd.DataFrame(rows)
-
-
-def print_table(title: str, table: pd.DataFrame) -> None:
-    print(f"\n=== {title} ===")
-    print(table.to_string(index=False))
-
-
-def save_tables(output_dir: Path, tables: dict[str, pd.DataFrame]) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    for name, table in tables.items():
-        table.to_csv(output_dir / f"{name}.csv", index=False, encoding="utf-8")
-    print(f"\nSaved {len(tables)} tables to {output_dir.resolve()}")
 
 
 def main() -> None:
     args = parse_args()
-    metric_keys = list(METRICS) if args.all_metrics else args.metrics
-    selected_metrics = {key: METRICS[key] for key in metric_keys}
     files = {
         "PIMA": args.pima,
         "Heart Failure": args.heart_failure,
         "Thoracic Surgery": args.thoracic_surgery,
     }
+    datasets: dict[str, pd.DataFrame] = {}
+    audit_rows = []
+    for dataset, path in files.items():
+        frame, audit = load_and_validate_dataset(dataset, path)
+        datasets[dataset] = frame
+        audit_rows.append(audit)
 
-    try:
-        datasets, validation = load_and_validate(
-            files,
-            [column for _, column in selected_metrics.values()],
-            args.include_threshold_independent,
-        )
-    except (FileNotFoundError, ValueError) as error:
-        raise SystemExit(f"Input validation failed: {error}") from None
-    friedman, posthoc = friedman_and_posthoc(datasets, selected_metrics)
-    tables = {
-        "dataset_validation": validation,
-        "marginal_summaries": marginal_summaries(datasets, selected_metrics),
-        "spearman_correlations": matched_spearman(datasets, selected_metrics),
-        "topk_overlap": topk_overlap(datasets, selected_metrics),
-        "friedman_tests": friedman,
-        "wilcoxon_holm": posthoc,
-    }
-    if args.include_threshold_independent:
-        tables["threshold_independent_spearman"] = threshold_independent_spearman(
-            datasets
-        )
+    validate_combined(args.combined, datasets)
+    manifest = validate_manifest(args.manifest)
+    audit = pd.DataFrame(audit_rows)
+    summary = descriptive_summary(datasets)
+    if not KEY_RESULTS_FILE.is_file():
+        raise FileNotFoundError(f"Missing authoritative key results: {KEY_RESULTS_FILE}")
+    key_results = pd.read_csv(KEY_RESULTS_FILE, encoding="utf-8-sig")
 
-    for name, table in tables.items():
-        print_table(name.replace("_", " ").title(), table)
-    print(
-        "\nCaution: threshold variants from one base configuration reuse the same "
-        "probability predictions; treat inferential p-values as descriptive evidence, "
-        "not as evidence from independent model fits."
-    )
     if args.output_dir:
-        save_tables(args.output_dir, tables)
+        output_dir = args.output_dir.expanduser().resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
+        audit.to_csv(output_dir / "revised_grid_validation.csv", index=False)
+        summary.to_csv(output_dir / "descriptive_metric_summary.csv", index=False)
+
+    print("MED-OS01 revised-result validation: PASS")
+    print(audit.to_string(index=False))
+    print("Combined summary: 1080 rows (PASS)")
+    print(f"Manifest: {len(manifest)} CSV files verified (PASS)")
+    print("\nAuthoritative manuscript-facing key results (not recomputed):")
+    print(key_results.to_string(index=False))
 
 
 if __name__ == "__main__":
