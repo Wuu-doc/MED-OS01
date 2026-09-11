@@ -1,0 +1,2 @@
+Comparison,LRT_Statistic,DF,PValue,FullLogLikelihood,ReducedLogLikelihood,FullConverged,ReducedConverged
+Full interaction vs additive reduced LMM,141.77372008457314,16,3.237367328165654e-22,48849.0985631205,48778.21170307821,True,True

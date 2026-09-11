@@ -1,0 +1,151 @@
+Dataset,Repeat,Fold,N_majority,N_minority,RequestedIntensity,TargetMinorityCount,RequestedSyntheticCount,ADASYN_Feasible,ErrorMessage,AchievedMinorityCount,AchievedMajorityCount,SamplerSeed
+PIMA,1,1,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,10663297
+PIMA,1,2,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,25980379
+PIMA,1,3,450,241,0.25,293,52,True,,256.0,450.0,1364334050
+PIMA,1,4,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1958303318
+PIMA,1,5,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,74951702
+PIMA,1,6,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,443810969
+PIMA,1,7,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1803503845
+PIMA,1,8,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1860687204
+PIMA,1,9,450,242,0.25,294,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1740469405
+PIMA,1,10,450,242,0.25,294,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1656190246
+PIMA,2,1,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1271925816
+PIMA,2,2,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,590830031
+PIMA,2,3,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,2125689228
+PIMA,2,4,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,161233942
+PIMA,2,5,450,241,0.25,293,52,True,,255.0,450.0,994890253
+PIMA,2,6,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,722104114
+PIMA,2,7,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,225059457
+PIMA,2,8,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,783943693
+PIMA,2,9,450,242,0.25,294,52,True,,257.0,450.0,349188142
+PIMA,2,10,450,242,0.25,294,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1666415006
+PIMA,3,1,450,241,0.25,293,52,True,,247.0,450.0,1881045299
+PIMA,3,2,450,241,0.25,293,52,True,,258.0,450.0,1628410849
+PIMA,3,3,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,869776655
+PIMA,3,4,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,24047881
+PIMA,3,5,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,2018538228
+PIMA,3,6,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,768058535
+PIMA,3,7,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,210946868
+PIMA,3,8,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,2121968919
+PIMA,3,9,450,242,0.25,294,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1821985425
+PIMA,3,10,450,242,0.25,294,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,64598175
+PIMA,4,1,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1676869492
+PIMA,4,2,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,316228897
+PIMA,4,3,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,847620555
+PIMA,4,4,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,700873988
+PIMA,4,5,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,58224129
+PIMA,4,6,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,882179080
+PIMA,4,7,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1384673518
+PIMA,4,8,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1129105317
+PIMA,4,9,450,242,0.25,294,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,231194847
+PIMA,4,10,450,242,0.25,294,52,True,,257.0,450.0,1701477378
+PIMA,5,1,450,241,0.25,293,52,True,,257.0,450.0,2143391416
+PIMA,5,2,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,356432527
+PIMA,5,3,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,492200163
+PIMA,5,4,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,421081985
+PIMA,5,5,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1703496023
+PIMA,5,6,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1208828657
+PIMA,5,7,450,241,0.25,293,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,2027809621
+PIMA,5,8,450,241,0.25,293,52,True,,252.0,450.0,1823455803
+PIMA,5,9,450,242,0.25,294,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,1398023743
+PIMA,5,10,450,242,0.25,294,52,False,ValueError: No samples will be generated with the provided ratio settings.,,,687167487
+Heart Failure,1,1,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1817913858
+Heart Failure,1,2,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,101632386
+Heart Failure,1,3,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1621143798
+Heart Failure,1,4,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1319879323
+Heart Failure,1,5,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,2074856796
+Heart Failure,1,6,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1825633886
+Heart Failure,1,7,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,693738002
+Heart Failure,1,8,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1561358356
+Heart Failure,1,9,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,447126878
+Heart Failure,1,10,183,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,257822896
+Heart Failure,2,1,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1551042758
+Heart Failure,2,2,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,203790530
+Heart Failure,2,3,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,314288985
+Heart Failure,2,4,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1965379285
+Heart Failure,2,5,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1057263096
+Heart Failure,2,6,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,808475859
+Heart Failure,2,7,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1182367091
+Heart Failure,2,8,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,950905897
+Heart Failure,2,9,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,542615216
+Heart Failure,2,10,183,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1037152228
+Heart Failure,3,1,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1329544061
+Heart Failure,3,2,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,933722215
+Heart Failure,3,3,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1269466879
+Heart Failure,3,4,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,909164408
+Heart Failure,3,5,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1065635412
+Heart Failure,3,6,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,880587266
+Heart Failure,3,7,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1562206663
+Heart Failure,3,8,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,398072586
+Heart Failure,3,9,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1497625550
+Heart Failure,3,10,183,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1967566819
+Heart Failure,4,1,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1861676423
+Heart Failure,4,2,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,689028278
+Heart Failure,4,3,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1325806524
+Heart Failure,4,4,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,786414695
+Heart Failure,4,5,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,470668895
+Heart Failure,4,6,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1433000949
+Heart Failure,4,7,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1891781588
+Heart Failure,4,8,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,285987143
+Heart Failure,4,9,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,477560021
+Heart Failure,4,10,183,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1069681264
+Heart Failure,5,1,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,955255308
+Heart Failure,5,2,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,1395818977
+Heart Failure,5,3,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,108062086
+Heart Failure,5,4,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,706288486
+Heart Failure,5,5,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,346520694
+Heart Failure,5,6,183,86,0.25,110,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,374842460
+Heart Failure,5,7,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,422300971
+Heart Failure,5,8,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,720674577
+Heart Failure,5,9,182,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,600218232
+Heart Failure,5,10,183,87,0.25,111,24,False,ValueError: No samples will be generated with the provided ratio settings.,,,439896807
+Thoracic Surgery,1,1,360,63,0.25,137,74,True,,126.0,360.0,1688439227
+Thoracic Surgery,1,2,360,63,0.25,137,74,True,,126.0,360.0,1386867890
+Thoracic Surgery,1,3,360,63,0.25,137,74,True,,126.0,360.0,1683988144
+Thoracic Surgery,1,4,360,63,0.25,137,74,True,,126.0,360.0,773824511
+Thoracic Surgery,1,5,360,63,0.25,137,74,True,,126.0,360.0,2043503832
+Thoracic Surgery,1,6,360,63,0.25,137,74,True,,126.0,360.0,196564727
+Thoracic Surgery,1,7,360,63,0.25,137,74,True,,126.0,360.0,1846735621
+Thoracic Surgery,1,8,360,63,0.25,137,74,True,,126.0,360.0,831133820
+Thoracic Surgery,1,9,360,63,0.25,137,74,True,,126.0,360.0,358003580
+Thoracic Surgery,1,10,360,63,0.25,137,74,True,,126.0,360.0,1153035242
+Thoracic Surgery,2,1,360,63,0.25,137,74,True,,126.0,360.0,103160028
+Thoracic Surgery,2,2,360,63,0.25,137,74,True,,126.0,360.0,1323445797
+Thoracic Surgery,2,3,360,63,0.25,137,74,True,,126.0,360.0,94064492
+Thoracic Surgery,2,4,360,63,0.25,137,74,True,,125.0,360.0,2082694706
+Thoracic Surgery,2,5,360,63,0.25,137,74,True,,126.0,360.0,1379954258
+Thoracic Surgery,2,6,360,63,0.25,137,74,True,,126.0,360.0,1122995075
+Thoracic Surgery,2,7,360,63,0.25,137,74,True,,126.0,360.0,203686229
+Thoracic Surgery,2,8,360,63,0.25,137,74,True,,126.0,360.0,1261142267
+Thoracic Surgery,2,9,360,63,0.25,137,74,True,,126.0,360.0,815880957
+Thoracic Surgery,2,10,360,63,0.25,137,74,True,,126.0,360.0,911971935
+Thoracic Surgery,3,1,360,63,0.25,137,74,True,,126.0,360.0,538700434
+Thoracic Surgery,3,2,360,63,0.25,137,74,True,,125.0,360.0,2008140793
+Thoracic Surgery,3,3,360,63,0.25,137,74,True,,126.0,360.0,1764511524
+Thoracic Surgery,3,4,360,63,0.25,137,74,True,,126.0,360.0,1400714132
+Thoracic Surgery,3,5,360,63,0.25,137,74,True,,126.0,360.0,343737251
+Thoracic Surgery,3,6,360,63,0.25,137,74,True,,126.0,360.0,594665718
+Thoracic Surgery,3,7,360,63,0.25,137,74,True,,126.0,360.0,823687740
+Thoracic Surgery,3,8,360,63,0.25,137,74,True,,126.0,360.0,1271049933
+Thoracic Surgery,3,9,360,63,0.25,137,74,True,,126.0,360.0,1499821798
+Thoracic Surgery,3,10,360,63,0.25,137,74,True,,126.0,360.0,1855630464
+Thoracic Surgery,4,1,360,63,0.25,137,74,True,,126.0,360.0,119009756
+Thoracic Surgery,4,2,360,63,0.25,137,74,True,,126.0,360.0,828334322
+Thoracic Surgery,4,3,360,63,0.25,137,74,True,,126.0,360.0,2000156648
+Thoracic Surgery,4,4,360,63,0.25,137,74,True,,126.0,360.0,1367895530
+Thoracic Surgery,4,5,360,63,0.25,137,74,True,,126.0,360.0,1809514023
+Thoracic Surgery,4,6,360,63,0.25,137,74,True,,126.0,360.0,883666955
+Thoracic Surgery,4,7,360,63,0.25,137,74,True,,126.0,360.0,1142000077
+Thoracic Surgery,4,8,360,63,0.25,137,74,True,,126.0,360.0,108317175
+Thoracic Surgery,4,9,360,63,0.25,137,74,True,,126.0,360.0,601804560
+Thoracic Surgery,4,10,360,63,0.25,137,74,True,,126.0,360.0,2111349459
+Thoracic Surgery,5,1,360,63,0.25,137,74,True,,126.0,360.0,1954171829
+Thoracic Surgery,5,2,360,63,0.25,137,74,True,,126.0,360.0,1906924373
+Thoracic Surgery,5,3,360,63,0.25,137,74,True,,126.0,360.0,46450038
+Thoracic Surgery,5,4,360,63,0.25,137,74,True,,126.0,360.0,1824307042
+Thoracic Surgery,5,5,360,63,0.25,137,74,True,,126.0,360.0,372261370
+Thoracic Surgery,5,6,360,63,0.25,137,74,True,,126.0,360.0,982489896
+Thoracic Surgery,5,7,360,63,0.25,137,74,True,,126.0,360.0,1121810234
+Thoracic Surgery,5,8,360,63,0.25,137,74,True,,126.0,360.0,1704594722
+Thoracic Surgery,5,9,360,63,0.25,137,74,True,,126.0,360.0,565706694
+Thoracic Surgery,5,10,360,63,0.25,137,74,True,,126.0,360.0,1233401375
